@@ -3,4 +3,5 @@
 import LeanMilhouse.Hash
 import LeanMilhouse.Packable
 import LeanMilhouse.Tree
+import LeanMilhouse.Tree.Get
 import LeanMilhouse.Tree.Set

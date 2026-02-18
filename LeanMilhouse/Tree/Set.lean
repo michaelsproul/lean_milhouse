@@ -3,6 +3,7 @@
   Corresponds to `with_updated_leaf` in Rust milhouse.
 -/
 import LeanMilhouse.Tree
+import LeanMilhouse.Packable
 
 namespace Tree
 
@@ -10,31 +11,57 @@ namespace Tree
     The real hash should be recomputed via `treeHash`. -/
 private def invalidHash : Thunk Hash := Thunk.mk fun _ => default
 
+private theorem pow_succ_mul (n pf : Nat) :
+    2 ^ (n + 1) * pf = 2 ^ n * pf + 2 ^ n * pf := by
+  have : 2 ^ (n + 1) = 2 ^ n + 2 ^ n := by
+    rw [Nat.pow_succ]; omega
+  rw [this, Nat.add_mul]
+
 /-- Set the value at index `i` in the tree, returning a new tree via path-copying.
 
-    Corresponds to `with_updated_leaf` in Rust milhouse. At each internal node,
-    the high bit of the index determines whether to descend left (0) or right (1).
+    The index space is `Fin (2^n * packingFactor)` where `n` is the tree depth
+    and `packingFactor` determines how many values are packed into each leaf.
+    At each internal node, the upper bits of the index determine whether to
+    descend left (0) or right (1). At a packed leaf, the lower bits select
+    the position within the packed vector.
+
     Only nodes along the root-to-leaf path are newly allocated; sibling subtrees
     are shared (persistent data structure).
 
     `zero` nodes are expanded on demand: a `zero` at depth `n+1` becomes a `node`
     with two `zero` children, and the update recurses into the appropriate side.
+    A `zero` at depth `0` becomes a packed leaf with default values and the
+    target position set to the new value.
 
     Hash thunks in newly created nodes are invalidated (set to a placeholder).
     Use `treeHash` to recompute the correct merkle root after updates. -/
-def set : {n : Nat} → Tree α n → Fin (2 ^ n) → α → Tree α n
-  | 0, .leaf _ _, _, v => .leaf invalidHash v
-  | 0, .packedLeaf _ _, _, v => .leaf invalidHash v
-  | 0, .zero, _, v => .leaf invalidHash v
+def set [Inhabited α] [p : Packable α] : {n : Nat} → Tree α n → Fin (2 ^ n * p.packingFactor) → α → Tree α n
+  | 0, .leaf _ _, i, v =>
+    let defaults := Vector.replicate p.packingFactor default
+    .packedLeaf invalidHash (defaults.set i.val v (by omega))
+  | 0, .packedLeaf _ values, i, v =>
+    if h : i.val < values.size then
+      .packedLeaf invalidHash (values.set i.val v h)
+    else
+      .packedLeaf invalidHash values
+  | 0, .zero, i, v =>
+    let defaults := Vector.replicate p.packingFactor default
+    .packedLeaf invalidHash (defaults.set i.val v (by omega))
   | n + 1, .node _ left right, i, v =>
-    if h : i.val < 2 ^ n then
-      .node invalidHash (left.set ⟨i.val, h⟩ v) right
+    if h : i.val < 2 ^ n * p.packingFactor then
+      .node invalidHash (set left ⟨i.val, h⟩ v) right
     else
-      .node invalidHash left (right.set ⟨i.val - 2 ^ n, by omega⟩ v)
+      .node invalidHash left (set right ⟨i.val - 2 ^ n * p.packingFactor, by
+        have := pow_succ_mul n p.packingFactor
+        have := i.isLt
+        omega⟩ v)
   | n + 1, .zero, i, v =>
-    if h : i.val < 2 ^ n then
-      .node invalidHash (Tree.zero.set ⟨i.val, h⟩ v) .zero
+    if h : i.val < 2 ^ n * p.packingFactor then
+      .node invalidHash (set .zero ⟨i.val, h⟩ v) .zero
     else
-      .node invalidHash .zero (Tree.zero.set ⟨i.val - 2 ^ n, by omega⟩ v)
+      .node invalidHash .zero (set .zero ⟨i.val - 2 ^ n * p.packingFactor, by
+        have := pow_succ_mul n p.packingFactor
+        have := i.isLt
+        omega⟩ v)
 
 end Tree
