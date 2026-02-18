@@ -2,13 +2,16 @@
   Hash opaque type, MerkleHash typeclass, and CollisionResistant extension.
 -/
 
-/-- Abstract hash type. We use `axiom` so that proofs cannot depend on
-    any concrete hash representation. -/
-axiom Hash : Type
-
-/-- `Hash` is inhabited (needed for `Thunk Hash`, default values, etc.). -/
-axiom Hash.inhabited : Inhabited Hash
-noncomputable instance : Inhabited Hash := Hash.inhabited
+/-- A 256-bit hash, represented as four 64-bit words.
+    The concrete representation makes all tree operations computable.
+    Proofs stay abstract by going through the `MerkleHash` typeclass interface,
+    never inspecting these fields directly. -/
+structure Hash where
+  w0 : UInt64
+  w1 : UInt64
+  w2 : UInt64
+  w3 : UInt64
+  deriving Inhabited, BEq, DecidableEq, Repr
 
 /-- Typeclass providing the merkle hashing operations for a value type `α`. -/
 class MerkleHash (α : Type) where
