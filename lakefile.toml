@@ -1,0 +1,10 @@
+name = "lean_milhouse"
+version = "0.1.0"
+defaultTargets = ["lean_milhouse"]
+
+[[lean_lib]]
+name = "LeanMilhouse"
+
+[[lean_exe]]
+name = "lean_milhouse"
+root = "Main"
