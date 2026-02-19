@@ -39,7 +39,7 @@ private theorem pow_succ_mul (n pf : Nat) :
 
     Hash thunks in newly created nodes are invalidated (set to a placeholder).
     Use `treeHash` to recompute the correct merkle root after updates. -/
-def set [Inhabited α] [p : Packable α] : {n : Nat} → Tree α p.packingFactor n → Fin (2 ^ n * p.packingFactor) → α → Tree α p.packingFactor n
+def set [Inhabited α] [p : Packable α] : {n : Nat} → Tree α n → Fin (2 ^ n * p.packingFactor) → α → Tree α n
   | 0, .leaf _ _, _, v =>
     .leaf invalidHash v
   | 0, .packedLeaf _ values, i, v =>
