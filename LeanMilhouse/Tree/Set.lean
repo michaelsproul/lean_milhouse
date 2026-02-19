@@ -43,10 +43,7 @@ def set [Inhabited α] [p : Packable α] : {n : Nat} → Tree α n → Fin (2 ^ 
   | 0, .leaf _ _, _, v =>
     .leaf invalidHash v
   | 0, .packedLeaf _ values, i, v =>
-    if h : i.val < values.size then
-      .packedLeaf invalidHash (values.set i.val v h)
-    else
-      .packedLeaf invalidHash values
+    .packedLeaf invalidHash (values.set i.val v (by omega))
   | 0, .zero, i, v =>
     if p.packingFactor == 1 then
       .leaf invalidHash v

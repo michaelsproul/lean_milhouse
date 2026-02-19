@@ -10,28 +10,12 @@ theorem get_set_same [Inhabited α] [p : Packable α] :
     ∀ {n : Nat} (t : Tree α n) (i : Fin (2 ^ n * p.packingFactor)) (v : α),
     (t.set i v).get i = v
   | 0, .leaf _ _, _, v => by simp [set, get]
-  | 0, .packedLeaf _ values, i, v => by
-    simp only [set]
-    have hsize : values.size = p.packingFactor := by simp [Vector.size]
-    have hi : i.val < values.size := by omega
-    split
-    · rename_i h
-      simp only [get, h, ↓reduceDIte]
-      simp
-    · rename_i h
-      exact absurd hi h
+  | 0, .packedLeaf _ values, i, v => by simp [set, get]
   | 0, .zero, i, v => by
     simp only [set]
     split
     · simp [get]
-    · rename_i hpf
-      simp only [get]
-      have hsize : ((Vector.replicate p.packingFactor default).set i.val v (by omega)).size
-        = p.packingFactor := by simp [Vector.size]
-      split
-      · simp
-      · rename_i h
-        exact absurd (by omega : i.val < _) h
+    · simp [get]
   | n + 1, .node _ left right, i, v => by
     simp only [set]
     split

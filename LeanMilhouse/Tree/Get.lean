@@ -26,8 +26,7 @@ private theorem pow_succ_mul (n pf : Nat) :
     Corresponds to `get_recursive` in Rust milhouse. -/
 def get [Inhabited α] [p : Packable α] : {n : Nat} → Tree α n → Fin (2 ^ n * p.packingFactor) → α
   | 0, .leaf _ v, _ => v
-  | 0, .packedLeaf _ values, i =>
-    if h : i.val < values.size then values[i.val] else default
+  | 0, .packedLeaf _ values, i => values[i.val]
   | 0, .zero, _ => default
   | n + 1, .node _ left right, i =>
     if h : i.val < 2 ^ n * p.packingFactor then
