@@ -106,7 +106,24 @@ in a single node at depth 0. When `packingFactor = 1`, `packedLeaf` and `leaf` a
 The packing factor affects index routing: the lowest `packingDepth` bits of an index select
 within the packed vector, while higher bits navigate the tree.
 
-### 7. Priority Proofs: Get/Set Roundtrip
+### 7. Leaf-Type Invariant
+
+A well-formed tree for type `α` must use exactly one kind of leaf, determined by
+`Packable.packingFactor`:
+
+- **`packingFactor = 1`** (complex types): The tree contains only `leaf` nodes at depth 0.
+  A `leaf` stores a single value. `packedLeaf` must never appear.
+- **`packingFactor > 1`** (small types like `UInt64`, `UInt32`): The tree contains only
+  `packedLeaf` nodes at depth 0, each holding a `Vector α packingFactor`.
+  `leaf` must never appear.
+- **`zero`** is permitted at any depth in either regime (it is a sentinel for uninitialized
+  subtrees, not a "real" leaf).
+
+All tree-constructing operations (`set`, `ofList`, future `fromList`, etc.) must preserve
+this invariant. `get` should handle both leaf types for totality, but may note that
+mismatched cases are unreachable in well-formed trees.
+
+### 8. Priority Proofs: Get/Set Roundtrip
 
 The first theorems to prove:
 
@@ -237,6 +254,14 @@ def Tree.toList [MerkleHash α] [Packable α] [Inhabited α] : Tree α n → Lis
    typeclass, meaning `packingFactor` is determined by the type `α`. If we ever need
    different packing for the same type in different contexts, we'd need to refactor.
    This matches Rust's design and should be fine.
+
+6. **`set` leaf-type invariant (FIXED)**: The original `set` implementation always
+   produced `packedLeaf` at depth 0, violating the leaf-type invariant (§7) when
+   `packingFactor = 1`. Fixed by:
+   - `leaf` case → produces `.leaf invalidHash v` (preserves leaf type)
+   - `packedLeaf` case → updates vector in place (unchanged, already correct)
+   - `zero` case → branches on `packingFactor == 1`: produces `leaf` if 1,
+     `packedLeaf` otherwise
 
 ---
 

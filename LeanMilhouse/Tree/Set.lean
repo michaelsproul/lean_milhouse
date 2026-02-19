@@ -30,23 +30,29 @@ private theorem pow_succ_mul (n pf : Nat) :
 
     `zero` nodes are expanded on demand: a `zero` at depth `n+1` becomes a `node`
     with two `zero` children, and the update recurses into the appropriate side.
-    A `zero` at depth `0` becomes a packed leaf with default values and the
-    target position set to the new value.
+    At depth `0`, a `zero` becomes either a `leaf` (when `packingFactor = 1`) or
+    a `packedLeaf` (when `packingFactor > 1`).
+
+    **Leaf-type invariant**: This function must preserve the invariant that a tree
+    uses only `leaf` when `packingFactor = 1` and only `packedLeaf` when
+    `packingFactor > 1`. See `Tree` docstring and plan.md §7.
 
     Hash thunks in newly created nodes are invalidated (set to a placeholder).
     Use `treeHash` to recompute the correct merkle root after updates. -/
 def set [Inhabited α] [p : Packable α] : {n : Nat} → Tree α n → Fin (2 ^ n * p.packingFactor) → α → Tree α n
-  | 0, .leaf _ _, i, v =>
-    let defaults := Vector.replicate p.packingFactor default
-    .packedLeaf invalidHash (defaults.set i.val v (by omega))
+  | 0, .leaf _ _, _, v =>
+    .leaf invalidHash v
   | 0, .packedLeaf _ values, i, v =>
     if h : i.val < values.size then
       .packedLeaf invalidHash (values.set i.val v h)
     else
       .packedLeaf invalidHash values
   | 0, .zero, i, v =>
-    let defaults := Vector.replicate p.packingFactor default
-    .packedLeaf invalidHash (defaults.set i.val v (by omega))
+    if p.packingFactor == 1 then
+      .leaf invalidHash v
+    else
+      let defaults := Vector.replicate p.packingFactor default
+      .packedLeaf invalidHash (defaults.set i.val v (by omega))
   | n + 1, .node _ left right, i, v =>
     if h : i.val < 2 ^ n * p.packingFactor then
       .node invalidHash (set left ⟨i.val, h⟩ v) right

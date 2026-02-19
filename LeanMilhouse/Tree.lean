@@ -10,7 +10,13 @@ import LeanMilhouse.Hash
     - `n : Nat` is the depth (number of levels above the leaves).
 
     The depth index statically guarantees that the tree is balanced:
-    a `node` always has two children of equal depth. -/
+    a `node` always has two children of equal depth.
+
+    **Leaf-type invariant**: A well-formed tree uses exactly one kind of depth-0
+    node, determined by `Packable.packingFactor`:
+    - `packingFactor = 1` → only `leaf` (never `packedLeaf`)
+    - `packingFactor > 1` → only `packedLeaf` (never `leaf`)
+    `zero` is permitted at any depth in either regime. -/
 inductive Tree (α : Type) : Nat → Type where
   /-- A single value at a leaf position (depth 0). -/
   | leaf (hash : Thunk Hash) (value : α) : Tree α 0
