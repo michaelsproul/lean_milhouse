@@ -21,11 +21,8 @@ private theorem pow_succ_mul (n pf : Nat) :
     `packingDepth` bits select within a packed leaf.
 
     `zero` nodes return the `default` (inhabited) value.
-    A `leaf` (single value, depth 0) returns its value regardless of the
-    packing index — this should only occur when `packingFactor = 1`.
     Corresponds to `get_recursive` in Rust milhouse. -/
 def get [Inhabited α] [p : Packable α] : {n : Nat} → Tree α n → Fin (2 ^ n * p.packingFactor) → α
-  | 0, .leaf _ v, _ => v
   | 0, .packedLeaf _ values, i => values[i.val]
   | 0, .zero, _ => default
   | n + 1, .node _ left right, i =>

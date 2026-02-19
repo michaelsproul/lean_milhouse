@@ -6,18 +6,6 @@ import LeanMilhouse.Tree.Set
 
 namespace Tree
 
-/-- A tree is well-formed if `leaf` nodes only appear when `packingFactor = 1`. -/
-def WellFormed [p : Packable α] : {n : Nat} → Tree α n → Prop
-  | 0, .leaf _ _ => p.packingFactor = 1
-  | 0, .packedLeaf _ _ => True
-  | 0, .zero => True
-  | _ + 1, .node _ left right => WellFormed left ∧ WellFormed right
-  | _ + 1, .zero => True
-
-@[simp] theorem wellFormed_zero [p : Packable α] {n : Nat} :
-    WellFormed (.zero : Tree α n) := by
-  cases n <;> trivial
-
 @[simp] theorem get_zero [Inhabited α] [p : Packable α] {n : Nat}
     (i : Fin (2 ^ n * p.packingFactor)) :
     (.zero : Tree α n).get i = (default : α) := by
@@ -26,13 +14,8 @@ def WellFormed [p : Packable α] : {n : Nat} → Tree α n → Prop
 theorem get_set_same [Inhabited α] [p : Packable α] :
     ∀ {n : Nat} (t : Tree α n) (i : Fin (2 ^ n * p.packingFactor)) (v : α),
     (t.set i v).get i = v
-  | 0, .leaf _ _, _, v => by simp [set, get]
   | 0, .packedLeaf _ values, i, v => by simp [set, get]
-  | 0, .zero, i, v => by
-    simp only [set]
-    split
-    · simp [get]
-    · simp [get]
+  | 0, .zero, i, v => by simp [set, get]
   | n + 1, .node _ left right, i, v => by
     simp only [set]
     split
@@ -60,37 +43,25 @@ theorem get_set_same [Inhabited α] [p : Packable α] :
 
 theorem get_set_other [Inhabited α] [p : Packable α] :
     ∀ {n : Nat} (t : Tree α n) (i j : Fin (2 ^ n * p.packingFactor)) (v : α),
-    WellFormed t → i ≠ j → (t.set i v).get j = t.get j
-  -- leaf: WellFormed gives packingFactor = 1, so Fin 1 → i = j → contradiction
-  | 0, .leaf _ _, i, j, v, hw, hij => by
-    exfalso; apply hij; ext
-    simp [WellFormed] at hw
-    have := i.isLt; have := j.isLt; omega
+    i ≠ j → (t.set i v).get j = t.get j
   -- packedLeaf: Vector.set at different index is identity
-  | 0, .packedLeaf _ values, i, j, v, _, hij => by
+  | 0, .packedLeaf _ values, i, j, v, hij => by
     simp only [set, get]
     have hne : i.val ≠ j.val := fun h => hij (Fin.ext h)
     simp [hne]
-  -- zero at depth 0: packingFactor == 1 gives contradiction, otherwise vector lemmas
-  | 0, .zero, i, j, v, _, hij => by
-    simp only [set]
-    split
-    · rename_i hbeq
-      exfalso; apply hij; ext
-      have := i.isLt; have := j.isLt
-      simp at hbeq
-      omega
-    · simp only [get]
-      have hne : i.val ≠ j.val := fun h => hij (Fin.ext h)
-      simp [hne]
+  -- zero at depth 0: expands to packedLeaf, then vector lemmas
+  | 0, .zero, i, j, v, hij => by
+    simp only [set, get]
+    have hne : i.val ≠ j.val := fun h => hij (Fin.ext h)
+    simp [hne]
   -- node: recurse into matching subtree, other subtree unaffected
-  | n + 1, .node _ left right, i, j, v, hw, hij => by
+  | n + 1, .node _ left right, i, j, v, hij => by
     simp only [set]
     split
     · rename_i hi
       by_cases hj : j.val < 2 ^ n * p.packingFactor
       · simp only [get, hj, ↓reduceDIte]
-        exact get_set_other left ⟨i.val, hi⟩ ⟨j.val, hj⟩ v hw.1
+        exact get_set_other left ⟨i.val, hi⟩ ⟨j.val, hj⟩ v
           (by intro heq
               have h := Fin.ext_iff.mp heq
               exact hij (Fin.ext h))
@@ -99,18 +70,18 @@ theorem get_set_other [Inhabited α] [p : Packable α] :
       by_cases hj : j.val < 2 ^ n * p.packingFactor
       · simp only [get, hj, ↓reduceDIte]
       · simp only [get, hj, ↓reduceDIte]
-        exact get_set_other right _ _ v hw.2
+        exact get_set_other right _ _ v
           (by intro heq
               have h := Fin.ext_iff.mp heq; simp at h
               exact hij (Fin.ext (by omega)))
   -- zero at depth n+1: expand and recurse, using get_zero for default
-  | n + 1, .zero, i, j, v, _, hij => by
+  | n + 1, .zero, i, j, v, hij => by
     simp only [set]
     split
     · rename_i hi
       by_cases hj : j.val < 2 ^ n * p.packingFactor
       · simp only [get, hj, ↓reduceDIte]
-        rw [get_set_other .zero ⟨i.val, hi⟩ ⟨j.val, hj⟩ v wellFormed_zero
+        rw [get_set_other .zero ⟨i.val, hi⟩ ⟨j.val, hj⟩ v
           (by intro heq
               have h := Fin.ext_iff.mp heq
               exact hij (Fin.ext h)),
@@ -120,7 +91,7 @@ theorem get_set_other [Inhabited α] [p : Packable α] :
       by_cases hj : j.val < 2 ^ n * p.packingFactor
       · simp only [get, hj, ↓reduceDIte, get_zero]
       · simp only [get, hj, ↓reduceDIte]
-        rw [get_set_other .zero _ _ v wellFormed_zero
+        rw [get_set_other .zero _ _ v
           (by intro heq
               have h := Fin.ext_iff.mp heq; simp at h
               exact hij (Fin.ext (by omega))),

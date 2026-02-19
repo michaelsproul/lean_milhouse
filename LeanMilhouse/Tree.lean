@@ -12,21 +12,13 @@ import LeanMilhouse.Packable
 
     The `Packable α` instance determines how many values are packed into each
     leaf. The packing factor is enforced at the type level: `packedLeaf` always
-    holds exactly `packingFactor` values.
+    holds exactly `packingFactor` values (including the `packingFactor = 1` case).
 
     The depth index statically guarantees that the tree is balanced:
     a `node` always has two children of equal depth.
-
-    **Leaf-type invariant**: A well-formed tree uses exactly one kind of depth-0
-    node, determined by `packingFactor`:
-    - `packingFactor = 1` → only `leaf` (never `packedLeaf`)
-    - `packingFactor > 1` → only `packedLeaf` (never `leaf`)
-    `zero` is permitted at any depth in either regime. -/
+    `zero` is permitted at any depth. -/
 inductive Tree (α : Type) [p : Packable α] : Nat → Type where
-  /-- A single value at a leaf position (depth 0). -/
-  | leaf (hash : Thunk Hash) (value : α) : Tree α 0
-  /-- Multiple small values packed into one leaf (depth 0).
-      The vector length is exactly `Packable.packingFactor`. -/
+  /-- Packed leaf holding exactly `packingFactor` values (depth 0). -/
   | packedLeaf (hash : Thunk Hash) (values : Vector α p.packingFactor) : Tree α 0
   /-- Internal node with two children of equal depth. -/
   | node (hash : Thunk Hash) (left right : Tree α n) : Tree α (n + 1)
