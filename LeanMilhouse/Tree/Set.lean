@@ -33,13 +33,13 @@ private theorem pow_succ_mul (n pf : Nat) :
     At depth `0`, a `zero` becomes either a `leaf` (when `packingFactor = 1`) or
     a `packedLeaf` (when `packingFactor > 1`).
 
-    **Leaf-type invariant**: This function must preserve the invariant that a tree
+    **Leaf-type invariant**: This function preserves the invariant that a tree
     uses only `leaf` when `packingFactor = 1` and only `packedLeaf` when
-    `packingFactor > 1`. See `Tree` docstring and plan.md §7.
+    `packingFactor > 1`. The `packedLeaf` vector size is enforced by the type.
 
     Hash thunks in newly created nodes are invalidated (set to a placeholder).
     Use `treeHash` to recompute the correct merkle root after updates. -/
-def set [Inhabited α] [p : Packable α] : {n : Nat} → Tree α n → Fin (2 ^ n * p.packingFactor) → α → Tree α n
+def set [Inhabited α] [p : Packable α] : {n : Nat} → Tree α p.packingFactor n → Fin (2 ^ n * p.packingFactor) → α → Tree α p.packingFactor n
   | 0, .leaf _ _, _, v =>
     .leaf invalidHash v
   | 0, .packedLeaf _ values, i, v =>
