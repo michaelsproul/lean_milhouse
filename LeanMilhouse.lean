@@ -5,4 +5,6 @@ import LeanMilhouse.Packable
 import LeanMilhouse.Tree
 import LeanMilhouse.Tree.Get
 import LeanMilhouse.Tree.Set
+import LeanMilhouse.Tree.Length
+import LeanMilhouse.Tree.Push
 import LeanMilhouse.Tree.Properties
